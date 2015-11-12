@@ -1,49 +1,66 @@
 require 'pry'
+
+module BaseItem
+  attr_accessor :item
+  attr_reader :sell_in, :quality
+
+  def initialize(item)
+    @item = item
+    @sell_in = item.sell_in
+    @quality = item.quality
+  end
+end
+
+class Normal
+  include BaseItem
+
+  def update
+    @item.sell_in -= 1
+    return if zero_quality?
+
+    @item.quality -= 1
+    @item.quality -= 1 if @sell_in == 0 or after_sell_date?
+  end
+
+  private def zero_quality?
+    @quality.zero?
+  end
+
+  private def after_sell_date?
+    @sell_in == -10
+  end
+end
+
+class AgedBrie
+  include BaseItem
+
+  def update
+    @item.sell_in -= 1
+    return if maxium_quality?
+    @item.quality += 1
+    @item.quality += 1 if @sell_in.zero? and near_max_quality?
+    @item.quality += 1 if after_sell_date?
+  end
+
+  private def maxium_quality?
+    @quality == 50
+  end
+
+  private def near_max_quality?
+    @quality < 49
+  end
+
+  private def after_sell_date?
+    @sell_in == -10
+  end
+end
+
 def update_quality(items)
   items.each do |item|
-    if item.name != 'Aged Brie' && item.name != 'Backstage passes to a TAFKAL80ETC concert'
-      if item.quality > 0
-        if item.name != 'Sulfuras, Hand of Ragnaros'
-          item.quality -= 1
-        end
-      end
-    else
-      if item.quality < 50
-        item.quality += 1
-        if item.name == 'Backstage passes to a TAFKAL80ETC concert'
-          if item.sell_in < 11
-            if item.quality < 50
-              item.quality += 1
-            end
-          end
-          if item.sell_in < 6
-            if item.quality < 50
-              item.quality += 1
-            end
-          end
-        end
-      end
-    end
-    if item.name != 'Sulfuras, Hand of Ragnaros'
-      item.sell_in -= 1
-    end
-    if item.sell_in < 0
-      if item.name != "Aged Brie"
-        if item.name != 'Backstage passes to a TAFKAL80ETC concert'
-          if item.quality > 0
-            if item.name != 'Sulfuras, Hand of Ragnaros'
-              item.quality -= 1
-            end
-          end
-        else
-          item.quality = item.quality - item.quality
-        end
-      else
-        if item.quality < 50
-          item.quality += 1
-        end
-      end
-    end
+    case item.name
+    when "NORMAL ITEM" then Normal
+    when "Aged Brie" then AgedBrie
+    end.new(item).update
   end
 end
 
